@@ -15,11 +15,16 @@ model User {
   username  String   @unique
   email     String?  @unique
   password  String?  // hashed password for simple auth
+  bio       String?
   createdAt DateTime @default(now())
 
-  trades    Trade[]
-  positions Position[]
-  ledger    Ledger[]
+  trades       Trade[]
+  positions    Position[]
+  ledger       Ledger[]
+  watchlist    Watchlist[]
+  priceAlerts  PriceAlert[]
+  limitOrders  LimitOrder[]
+  settings     UserSettings?
 
   @@index([username])
 }
@@ -39,6 +44,9 @@ model Song {
   priceHistory PriceHistory[]
   trades       Trade[]
   positions    Position[]
+  watchlist    Watchlist[]
+  priceAlerts  PriceAlert[]
+  limitOrders  LimitOrder[]
 
   @@index([title])
   @@index([artistName])
@@ -140,4 +148,88 @@ model PriceHistory {
   @@index([songId])
   @@index([createdAt])
   @@index([songId, createdAt])
+}
+
+// Watchlist - users can watch songs
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, songId])
+  @@index([userId])
+  @@index([songId])
+}
+
+enum AlertType {
+  PRICE_ABOVE
+  PRICE_BELOW
+  CHANGE_PERCENT
+}
+
+// Price Alerts - notify when conditions are met
+model PriceAlert {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId      String
+  song        Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  type        AlertType
+  targetValue Decimal   @db.Decimal(10, 2) // target price or percent
+  isActive    Boolean   @default(true)
+  triggered   Boolean   @default(false)
+  triggeredAt DateTime?
+
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([songId])
+  @@index([isActive])
+}
+
+enum OrderStatus {
+  PENDING
+  FILLED
+  CANCELLED
+  EXPIRED
+}
+
+// Limit Orders - execute automatically when price is reached
+model LimitOrder {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId     String
+  song       Song        @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  side       TradeSide
+  qty        Decimal     @db.Decimal(15, 4)
+  limitPrice Decimal     @db.Decimal(10, 2)
+  status     OrderStatus @default(PENDING)
+
+  expiresAt  DateTime?
+  filledAt   DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@index([userId])
+  @@index([songId])
+  @@index([status])
+}
+
+// User Settings - preferences like dark mode
+model UserSettings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  darkMode    Boolean @default(false)
+  emailAlerts Boolean @default(true)
+  pushAlerts  Boolean @default(true)
+
+  updatedAt   DateTime @updatedAt
 }
