@@ -34,6 +34,16 @@ export function Navigation() {
                 Markets
               </Link>
               <Link
+                href="/watchlist"
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  isActive('/watchlist')
+                    ? 'bg-purple-800'
+                    : 'hover:bg-purple-800'
+                }`}
+              >
+                Watchlist
+              </Link>
+              <Link
                 href="/portfolio"
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
                   isActive('/portfolio')
