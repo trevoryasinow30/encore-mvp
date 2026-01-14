@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  password  String?  // hashed password for simple auth
+  createdAt DateTime @default(now())
+
+  trades    Trade[]
+  positions Position[]
+  ledger    Ledger[]
+
+  @@index([username])
+}
+
+model Song {
+  id              String   @id @default(cuid())
+  title           String
+  artistName      String
+  isCover         Boolean  @default(false)
+  releaseYear     Int?
+  spotifyTrackId  String?
+  appleMusicId    String?
+  youtubeId       String?
+  createdAt       DateTime @default(now())
+
+  marketState MarketState?
+  trades      Trade[]
+  positions   Position[]
+
+  @@index([title])
+  @@index([artistName])
+  @@index([isCover])
+  @@index([releaseYear])
+}
+
+model MarketState {
+  id            String   @id @default(cuid())
+  songId        String   @unique
+  song          Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  price         Decimal  @db.Decimal(10, 2)
+  change24hPct  Decimal  @db.Decimal(10, 2) @default(0)
+  volume24h     Decimal  @db.Decimal(15, 2) @default(0)
+  traders24h    Int      @default(0)
+  tags          String[] // array of tags like ["RE-EMERGING", "TIKTOK_SPIKE"]
+
+  lastUpdatedAt DateTime @default(now())
+
+  @@index([price])
+  @@index([change24hPct])
+  @@index([volume24h])
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+model Trade {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  songId    String
+  song      Song      @relation(fields: [songId], references: [id])
+
+  side      TradeSide
+  qty       Decimal   @db.Decimal(15, 4) // allow fractional shares
+  price     Decimal   @db.Decimal(10, 2)
+  total     Decimal   @db.Decimal(15, 2) // qty * price
+
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([songId])
+  @@index([createdAt])
+}
+
+model Position {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id])
+
+  qty       Decimal  @db.Decimal(15, 4)
+  avgCost   Decimal  @db.Decimal(10, 2)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, songId])
+  @@index([userId])
+  @@index([songId])
+}
+
+enum LedgerType {
+  DEPOSIT
+  TRADE
+  ADJUST
+}
+
+model Ledger {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+
+  type         LedgerType
+  amount       Decimal    @db.Decimal(15, 2) // positive or negative
+  balanceAfter Decimal    @db.Decimal(15, 2)
+  description  String?
+
+  createdAt    DateTime   @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
