@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { TradeModule } from '@/components/TradeModule';
 import { getTagExplanation } from '@/lib/signals';
 import { PriceChart } from '@/components/PriceChart';
+import { MusicPlayer } from '@/components/MusicPlayer';
 
 async function getSongData(songId: string) {
   const song = await prisma.song.findUnique({
@@ -95,6 +96,18 @@ export default async function SongPage({ params }: { params: { id: string } }) {
                 Volume: ${volume.toFixed(2)}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Music Player */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">🎵 Listen Now</h2>
+            <MusicPlayer
+              youtubeId={song.youtubeId}
+              title={song.title}
+              artistName={song.artistName}
+            />
           </div>
         </div>
 
