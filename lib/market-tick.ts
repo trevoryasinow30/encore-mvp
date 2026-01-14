@@ -93,6 +93,15 @@ export async function runMarketTick() {
       });
     }
 
+    // Save price history snapshot
+    await prisma.priceHistory.create({
+      data: {
+        songId: song.id,
+        price: new Decimal(newPrice.toFixed(2)),
+        volume: new Decimal(volume24h.toFixed(2)),
+      },
+    });
+
     return {
       songId: song.id,
       title: song.title,

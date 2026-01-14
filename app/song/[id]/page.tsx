@@ -5,12 +5,19 @@ import { Navigation } from '@/components/Navigation';
 import { prisma } from '@/lib/prisma';
 import { TradeModule } from '@/components/TradeModule';
 import { getTagExplanation } from '@/lib/signals';
+import { PriceChart } from '@/components/PriceChart';
 
 async function getSongData(songId: string) {
   const song = await prisma.song.findUnique({
     where: { id: songId },
     include: {
       marketState: true,
+      priceHistory: {
+        orderBy: {
+          createdAt: 'asc',
+        },
+        take: 100, // Last 100 data points
+      },
       trades: {
         include: {
           user: {
@@ -47,6 +54,13 @@ export default async function SongPage({ params }: { params: { id: string } }) {
   const change = Number(song.marketState?.change24hPct || 0);
   const volume = Number(song.marketState?.volume24h || 0);
   const tags = song.marketState?.tags || [];
+
+  // Format price history for chart
+  const priceHistory = song.priceHistory.map((ph) => ({
+    time: new Date(ph.createdAt).toLocaleTimeString(),
+    price: Number(ph.price),
+    createdAt: ph.createdAt,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -87,14 +101,10 @@ export default async function SongPage({ params }: { params: { id: string } }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column - Chart and Why it's moving */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Price Chart Placeholder */}
+            {/* Price Chart */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Price Chart</h2>
-              <div className="h-64 bg-gradient-to-br from-purple-50 to-pink-50 rounded flex items-center justify-center">
-                <p className="text-gray-500">
-                  Chart visualization (implement with Recharts for real data)
-                </p>
-              </div>
+              <PriceChart data={priceHistory} />
             </div>
 
             {/* Why it's moving */}

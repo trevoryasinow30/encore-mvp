@@ -35,9 +35,10 @@ model Song {
   youtubeId       String?
   createdAt       DateTime @default(now())
 
-  marketState MarketState?
-  trades      Trade[]
-  positions   Position[]
+  marketState  MarketState?
+  priceHistory PriceHistory[]
+  trades       Trade[]
+  positions    Position[]
 
   @@index([title])
   @@index([artistName])
@@ -124,4 +125,19 @@ model Ledger {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model PriceHistory {
+  id        String   @id @default(cuid())
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  price     Decimal  @db.Decimal(10, 2)
+  volume    Decimal  @db.Decimal(15, 2) @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([songId])
+  @@index([createdAt])
+  @@index([songId, createdAt])
 }
