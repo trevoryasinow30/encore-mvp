@@ -104,7 +104,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">🎵 Listen Now</h2>
             <MusicPlayer
-              youtubeId={song.youtubeId}
+              spotifyTrackId={song.spotifyTrackId}
               title={song.title}
               artistName={song.artistName}
             />
