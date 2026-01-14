@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from './ThemeToggle';
 
 export function Navigation() {
   const { data: session } = useSession();
@@ -86,6 +87,7 @@ export function Navigation() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <span className="text-sm">{session.user?.name}</span>
             <button
               onClick={() => signOut()}
