@@ -11,7 +11,7 @@ const newSongs = [
   { title: "Stairway to Heaven", artistName: "Led Zeppelin", releaseYear: 1971, isCover: false, spotifyTrackId: "5CQ30WqJwcep0pYcV4AMNc" },
   { title: "Whole Lotta Love", artistName: "Led Zeppelin", releaseYear: 1969, isCover: false, spotifyTrackId: "0hCB0YR03f6AmQaHbwWDe8" },
   { title: "Light My Fire", artistName: "The Doors", releaseYear: 1967, isCover: false, spotifyTrackId: "3TanVOzibGLPWRS0EVW5bx" },
-  { title: "Purple Haze", artistName: "Jimi Hendrix", releaseYear: 1967, isCover: false, spotifyTrackId: "0wJoRiX5K5BxlqZTp SnW5Gz" },
+  { title: "Purple Haze", artistName: "Jimi Hendrix", releaseYear: 1967, isCover: false, spotifyTrackId: "0wJoRiX5K5BxlqZTpSnW5Gz" },
   { title: "Good Vibrations", artistName: "The Beach Boys", releaseYear: 1966, isCover: false, spotifyTrackId: "70CIGA6kXETbg8WLnDO0Uk" },
   { title: "I Want to Hold Your Hand", artistName: "The Beatles", releaseYear: 1963, isCover: false, spotifyTrackId: "4pbG9SUmWIvsROVLF0zF9s" },
 
@@ -23,7 +23,7 @@ const newSongs = [
   { title: "Don't Stop Me Now", artistName: "Queen", releaseYear: 1978, isCover: false, spotifyTrackId: "5T8EDUDqKcs6OSOwEsfqG7" },
   { title: "We Will Rock You", artistName: "Queen", releaseYear: 1977, isCover: false, spotifyTrackId: "54flyrjcdnQdco7300avMJ" },
   { title: "Superstition", artistName: "Stevie Wonder", releaseYear: 1972, isCover: false, spotifyTrackId: "1h2xVEoJORqrg71HocgqXd" },
-  { title: "Le Freak", artistName: "Chic", releaseYear: 1978, isCover: false, spotifyTrackId: "7CHRMEGKy8wRJ  ZRSS0lQ5P" },
+  { title: "Le Freak", artistName: "Chic", releaseYear: 1978, isCover: false, spotifyTrackId: "7CHRMEGKy8wRJZRSS0lQ5P" },
 
   // 1980s Pop/Rock
   { title: "Livin' on a Prayer", artistName: "Bon Jovi", releaseYear: 1986, isCover: false, spotifyTrackId: "0J6mQxEZnlRt9ymzFntA6z" },
