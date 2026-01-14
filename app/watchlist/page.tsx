@@ -49,7 +49,7 @@ export default async function WatchlistPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">My Watchlist</h1>
           <p className="text-gray-600">
-            Songs you're tracking ({watchlist.length} songs)
+            Songs you&apos;re tracking ({watchlist.length} songs)
           </p>
         </div>
 
