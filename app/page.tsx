@@ -63,41 +63,6 @@ async function getMarketData(searchQuery?: string) {
   };
 }
 
-
-  // Top Movers (by % change)
-  const topMovers = songsWithMarket
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
-    .slice(0, 10);
-
-  // Re-Emerging (older songs with positive momentum)
-  const currentYear = new Date().getFullYear();
-  const reEmerging = songsWithMarket
-    .filter((s) => {
-      const age = s.releaseYear ? currentYear - s.releaseYear : 0;
-      return age >= 5 && Number(s.marketState!.change24hPct) > 0;
-    })
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
-    .slice(0, 10);
-
-  // Covers Heating Up
-  const covers = songsWithMarket
-    .filter((s) => s.isCover)
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
-    .slice(0, 10);
-
-  // Trending (most traded)
-  const trending = songsWithMarket
-    .sort((a, b) => Number(b.marketState!.volume24h) - Number(a.marketState!.volume24h))
-    .slice(0, 10);
-
-  return {
-    topMovers,
-    reEmerging,
-    covers,
-    trending,
-  };
-}
-
 function SongCard({ song }: { song: any }) {
   const price = Number(song.marketState?.price || 0);
   const change = Number(song.marketState?.change24hPct || 0);
