@@ -54,6 +54,16 @@ export function Navigation() {
                 Portfolio
               </Link>
               <Link
+                href="/history"
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  isActive('/history')
+                    ? 'bg-purple-800'
+                    : 'hover:bg-purple-800'
+                }`}
+              >
+                History
+              </Link>
+              <Link
                 href="/leaderboard"
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
                   isActive('/leaderboard')
