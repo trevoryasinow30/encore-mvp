@@ -17,7 +17,7 @@ async function getLeaderboard() {
 
   // Calculate equity for each user
   const leaderboardData = await Promise.all(
-    users.map(async (user) => {
+    users.map(async (user: typeof users[number]) => {
       // Get balance
       const latestLedger = await prisma.ledger.findFirst({
         where: { userId: user.id },
@@ -38,7 +38,7 @@ async function getLeaderboard() {
         },
       });
 
-      const marketValue = positions.reduce((sum, position) => {
+      const marketValue = positions.reduce((sum: number, position: typeof positions[number]) => {
         const qty = Number(position.qty);
         const price = Number(position.song.marketState?.price || 0);
         return sum + qty * price;
@@ -64,7 +64,7 @@ async function getLeaderboard() {
   );
 
   // Sort by total equity descending
-  leaderboardData.sort((a, b) => b.totalEquity - a.totalEquity);
+  leaderboardData.sort((a: typeof leaderboardData[number], b: typeof leaderboardData[number]) => b.totalEquity - a.totalEquity);
 
   return leaderboardData;
 }
@@ -72,7 +72,7 @@ async function getLeaderboard() {
 async function getTopTraderActivity() {
   // Get recent trades from top 10 traders
   const topTraders = await getLeaderboard();
-  const topTraderIds = topTraders.slice(0, 10).map((t) => t.userId);
+  const topTraderIds = topTraders.slice(0, 10).map((t: typeof topTraders[number]) => t.userId);
 
   const recentTrades = await prisma.trade.findMany({
     where: {
@@ -115,7 +115,7 @@ export default async function Leaderboard() {
 
   // Find current user's rank
   const currentUserRank =
-    leaderboard.findIndex((u) => u.userId === session.user.id) + 1;
+    leaderboard.findIndex((u: typeof leaderboard[number]) => u.userId === session.user.id) + 1;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,7 +133,7 @@ export default async function Leaderboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Top 3 Traders Highlight */}
-          {leaderboard.slice(0, 3).map((trader, index) => {
+          {leaderboard.slice(0, 3).map((trader: typeof leaderboard[number], index: number) => {
             const pnl = trader.totalEquity - 10000;
             const pnlPct = (pnl / 10000) * 100;
             const medals = ['🥇', '🥈', '🥉'];
@@ -192,7 +192,7 @@ export default async function Leaderboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {leaderboard.map((user, index) => {
+              {leaderboard.map((user: typeof leaderboard[number], index: number) => {
                 const isCurrentUser = user.userId === session.user.id;
                 const pnl = user.totalEquity - 10000; // Starting balance was $10,000
                 const pnlPct = (pnl / 10000) * 100;
@@ -282,7 +282,7 @@ export default async function Leaderboard() {
               <p className="text-sm text-gray-600">See what the best traders are buying and selling</p>
             </div>
             <div className="divide-y divide-gray-200">
-              {topTraderActivity.map((trade) => (
+              {topTraderActivity.map((trade: typeof topTraderActivity[number]) => (
                 <div key={trade.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">

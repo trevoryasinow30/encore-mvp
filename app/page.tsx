@@ -27,32 +27,32 @@ async function getMarketData(searchQuery?: string) {
     take: 100, // Limit to 100 songs for performance
   });
 
-  const songsWithMarket = songs.filter((s) => s.marketState);
+  const songsWithMarket = songs.filter((s: typeof songs[number]) => s.marketState);
 
   // Top Movers (by % change)
   const topMovers = songsWithMarket
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
+    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
     .slice(0, 10);
 
   // Re-Emerging (older songs with positive momentum)
   const currentYear = new Date().getFullYear();
   const reEmerging = songsWithMarket
-    .filter((s) => {
+    .filter((s: typeof songsWithMarket[number]) => {
       const age = s.releaseYear ? currentYear - s.releaseYear : 0;
       return age >= 5 && Number(s.marketState!.change24hPct) > 0;
     })
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
+    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
     .slice(0, 10);
 
   // Covers Heating Up
   const covers = songsWithMarket
-    .filter((s) => s.isCover)
-    .sort((a, b) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
+    .filter((s: typeof songsWithMarket[number]) => s.isCover)
+    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
     .slice(0, 10);
 
   // Trending (most traded)
   const trending = songsWithMarket
-    .sort((a, b) => Number(b.marketState!.volume24h) - Number(a.marketState!.volume24h))
+    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.volume24h) - Number(a.marketState!.volume24h))
     .slice(0, 10);
 
   return {
@@ -92,7 +92,7 @@ function SongCard({ song }: { song: any }) {
       </div>
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {tags.slice(0, 2).map((tag) => (
+          {tags.slice(0, 2).map((tag: string) => (
             <span
               key={tag}
               className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded"
@@ -140,13 +140,13 @@ async function searchSongs(query: string) {
     take: 50, // Limit search results
   });
 
-  return songs.filter((s) => s.marketState);
+  return songs.filter((s: typeof songs[number]) => s.marketState);
 }
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -154,7 +154,8 @@ export default async function Home({
     redirect('/auth/signin');
   }
 
-  const searchQuery = searchParams.q;
+  const params = await searchParams;
+  const searchQuery = params.q;
   const searchResults = searchQuery ? await searchSongs(searchQuery) : null;
   const marketData = !searchQuery ? await getMarketData() : null;
 
@@ -183,7 +184,7 @@ export default async function Home({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                {searchResults.map((song) => (
+                {searchResults.map((song: typeof searchResults[number]) => (
                   <SongCard key={song.id} song={song} />
                 ))}
               </div>

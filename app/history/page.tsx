@@ -57,8 +57,8 @@ async function getAnalytics(userId: string) {
   });
 
   // Calculate P&L for closed positions (buy then sell)
-  const tradesBySong: Record<string, any[]> = {};
-  trades.forEach((trade) => {
+  const tradesBySong: Record<string, typeof trades> = {};
+  trades.forEach((trade: typeof trades[number]) => {
     if (!tradesBySong[trade.songId]) {
       tradesBySong[trade.songId] = [];
     }
@@ -75,7 +75,7 @@ async function getAnalytics(userId: string) {
     let costBasis = 0;
     let realizedPnL = 0;
 
-    songTrades.forEach((trade) => {
+    songTrades.forEach((trade: typeof trades[number]) => {
       if (trade.side === 'BUY') {
         shares += Number(trade.qty);
         costBasis += Number(trade.total);
@@ -107,7 +107,7 @@ async function getAnalytics(userId: string) {
 
   // Calculate unrealized P&L from current positions
   let totalUnrealizedPnL = 0;
-  positions.forEach((pos) => {
+  positions.forEach((pos: typeof positions[number]) => {
     const currentPrice = Number(pos.song.marketState?.price || 0);
     const avgCost = Number(pos.avgCost);
     const shares = Number(pos.qty);
@@ -299,7 +299,7 @@ export default async function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {trades.map((trade) => {
+                  {trades.map((trade: typeof trades[number]) => {
                     const currentPrice = Number(trade.song.marketState?.price || 0);
                     const tradePrice = Number(trade.price);
                     const priceDiff = currentPrice - tradePrice;

@@ -14,9 +14,9 @@ export default async function Portfolio() {
 
   const portfolio = await getPortfolio(session.user.id);
 
-  const totalPnL = portfolio.positions.reduce((sum, p) => sum + p.unrealizedPnL, 0);
+  const totalPnL = portfolio.positions.reduce((sum: number, p: typeof portfolio.positions[number]) => sum + p.unrealizedPnL, 0);
   const totalCostBasis = portfolio.positions.reduce(
-    (sum, p) => sum + p.qty * p.avgCost,
+    (sum: number, p: typeof portfolio.positions[number]) => sum + p.qty * p.avgCost,
     0
   );
   const totalPnLPct =
@@ -119,7 +119,7 @@ export default async function Portfolio() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {portfolio.positions.map((position) => (
+                  {portfolio.positions.map((position: typeof portfolio.positions[number]) => (
                     <tr key={position.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link

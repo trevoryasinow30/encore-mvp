@@ -38,14 +38,15 @@ async function getSongData(songId: string) {
   return song;
 }
 
-export default async function SongPage({ params }: { params: { id: string } }) {
+export default async function SongPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
     redirect('/auth/signin');
   }
 
-  const song = await getSongData(params.id);
+  const { id } = await params;
+  const song = await getSongData(id);
 
   if (!song) {
     return <div>Song not found</div>;
@@ -57,7 +58,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
   const tags = song.marketState?.tags || [];
 
   // Format price history for chart
-  const priceHistory = song.priceHistory.map((ph) => ({
+  const priceHistory = song.priceHistory.map((ph: typeof song.priceHistory[number]) => ({
     time: new Date(ph.createdAt).toLocaleTimeString(),
     price: Number(ph.price),
     createdAt: ph.createdAt,
@@ -125,7 +126,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
               <div className="bg-white rounded-lg shadow p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Why It&apos;s Moving</h2>
                 <div className="space-y-3">
-                  {tags.map((tag) => (
+                  {tags.map((tag: string) => (
                     <div
                       key={tag}
                       className="flex items-start p-3 bg-purple-50 rounded-lg"
@@ -152,7 +153,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
                 <p className="text-gray-500 text-center py-8">No trades yet</p>
               ) : (
                 <div className="space-y-2">
-                  {song.trades.map((trade) => (
+                  {song.trades.map((trade: typeof song.trades[number]) => (
                     <div
                       key={trade.id}
                       className="flex justify-between items-center p-3 bg-gray-50 rounded"
