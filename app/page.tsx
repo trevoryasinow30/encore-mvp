@@ -103,38 +103,38 @@ function SongCard({ song }: { song: any }) {
         )}
       </div>
 
-      {/* Content Section - Better organized */}
+      {/* Content Section - Fully Vertical Layout */}
       <div className="p-5">
         {/* Song Info */}
-        <div className="mb-3">
-          <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">
+        <div className="mb-4">
+          <h3 className="font-bold text-gray-900 text-lg mb-1.5 line-clamp-2">
             {song.title}
           </h3>
           <p className="text-sm text-gray-500 line-clamp-1">{song.artistName}</p>
         </div>
 
-        {/* Price Info - Separated */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 mb-0.5">Price</p>
-            <p className="font-bold text-lg text-gray-900">${price.toFixed(2)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500 mb-0.5">24h Change</p>
-            <p
-              className={`font-bold text-lg ${
-                change >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {change >= 0 ? '+' : ''}
-              {change.toFixed(2)}%
-            </p>
-          </div>
+        {/* Price - Full Width */}
+        <div className="mb-3 pb-3 border-b border-gray-100">
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Price</p>
+          <p className="font-bold text-2xl text-gray-900">${price.toFixed(2)}</p>
+        </div>
+
+        {/* 24h Change - Full Width */}
+        <div className="mb-3">
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">24h Change</p>
+          <p
+            className={`font-bold text-2xl ${
+              change >= 0 ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {change >= 0 ? '+' : ''}
+            {change.toFixed(2)}%
+          </p>
         </div>
 
         {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
+          <div className="flex flex-wrap gap-1.5 pt-3 border-t border-gray-100">
             {tags.slice(0, 2).map((tag: string) => (
               <span
                 key={tag}
