@@ -8,6 +8,7 @@
     "cron": "tsx cron-service.ts",
     "import:spotify": "tsx spotify-importer.ts",
     "import:csv": "tsx csv-importer.ts",
+    "fetch:images": "tsx fetch-album-images.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
