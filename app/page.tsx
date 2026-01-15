@@ -76,8 +76,8 @@ function SongCard({ song }: { song: any }) {
       href={`/song/${song.id}`}
       className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
     >
-      {/* Image Section */}
-      <div className="relative h-48 bg-gradient-to-br from-purple-100 to-pink-100">
+      {/* Image Section - Smaller and cleaner */}
+      <div className="relative h-32 bg-gradient-to-br from-purple-100 to-pink-100">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -87,7 +87,7 @@ function SongCard({ song }: { song: any }) {
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <svg
-              className="w-20 h-20 text-purple-300"
+              className="w-12 h-12 text-purple-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -103,17 +103,26 @@ function SongCard({ song }: { song: any }) {
         )}
       </div>
 
-      {/* Content Section */}
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate">{song.title}</h3>
-            <p className="text-sm text-gray-600 truncate">{song.artistName}</p>
+      {/* Content Section - Better organized */}
+      <div className="p-5">
+        {/* Song Info */}
+        <div className="mb-3">
+          <h3 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">
+            {song.title}
+          </h3>
+          <p className="text-sm text-gray-500 line-clamp-1">{song.artistName}</p>
+        </div>
+
+        {/* Price Info - Separated */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">Price</p>
+            <p className="font-bold text-lg text-gray-900">${price.toFixed(2)}</p>
           </div>
-          <div className="text-right ml-4 flex-shrink-0">
-            <p className="font-bold text-gray-900">${price.toFixed(2)}</p>
+          <div className="text-right">
+            <p className="text-xs text-gray-500 mb-0.5">24h Change</p>
             <p
-              className={`text-sm font-medium ${
+              className={`font-bold text-lg ${
                 change >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
@@ -122,12 +131,14 @@ function SongCard({ song }: { song: any }) {
             </p>
           </div>
         </div>
+
+        {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100">
             {tags.slice(0, 2).map((tag: string) => (
               <span
                 key={tag}
-                className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded"
+                className="inline-block px-2.5 py-1 text-xs font-semibold bg-purple-100 text-purple-700 rounded-full"
               >
                 {tag.replace(/_/g, ' ')}
               </span>
