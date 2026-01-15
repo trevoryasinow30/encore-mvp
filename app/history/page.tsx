@@ -141,7 +141,7 @@ export default async function HistoryPage() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.email) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/history');
   }
 
   const user = await prisma.user.findUnique({
@@ -149,7 +149,7 @@ export default async function HistoryPage() {
   });
 
   if (!user) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/history');
   }
 
   const trades = await getTradeHistory(user.id);

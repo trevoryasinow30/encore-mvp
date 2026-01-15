@@ -42,7 +42,7 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/');
   }
 
   const { id } = await params;

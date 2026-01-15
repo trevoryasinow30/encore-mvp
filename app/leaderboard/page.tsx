@@ -107,7 +107,7 @@ export default async function Leaderboard() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/leaderboard');
   }
 
   const leaderboard = await getLeaderboard();

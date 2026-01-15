@@ -9,7 +9,7 @@ export default async function Portfolio() {
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/portfolio');
   }
 
   const portfolio = await getPortfolio(session.user.id);

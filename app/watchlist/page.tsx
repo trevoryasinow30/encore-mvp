@@ -29,7 +29,7 @@ export default async function WatchlistPage() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.email) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/watchlist');
   }
 
   const user = await prisma.user.findUnique({
@@ -37,7 +37,7 @@ export default async function WatchlistPage() {
   });
 
   if (!user) {
-    redirect('/auth/signin');
+    redirect('/auth/signin?callbackUrl=/watchlist');
   }
 
   const watchlist = await getWatchlistData(user.id);
