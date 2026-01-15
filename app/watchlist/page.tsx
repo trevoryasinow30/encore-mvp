@@ -28,19 +28,11 @@ async function getWatchlistData(userId: string) {
 export default async function WatchlistPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/watchlist');
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username: session.user.email },
-  });
-
-  if (!user) {
-    redirect('/auth/signin?callbackUrl=/watchlist');
-  }
-
-  const watchlist = await getWatchlistData(user.id);
+  const watchlist = await getWatchlistData(session.user.id);
 
   return (
     <div className="min-h-screen bg-gray-50">

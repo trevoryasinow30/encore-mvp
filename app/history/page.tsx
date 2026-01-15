@@ -140,20 +140,12 @@ async function getAnalytics(userId: string) {
 export default async function HistoryPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect('/auth/signin?callbackUrl=/history');
   }
 
-  const user = await prisma.user.findUnique({
-    where: { username: session.user.email },
-  });
-
-  if (!user) {
-    redirect('/auth/signin?callbackUrl=/history');
-  }
-
-  const trades = await getTradeHistory(user.id);
-  const analytics = await getAnalytics(user.id);
+  const trades = await getTradeHistory(session.user.id);
+  const analytics = await getAnalytics(session.user.id);
 
   return (
     <div className="min-h-screen bg-gray-50">
