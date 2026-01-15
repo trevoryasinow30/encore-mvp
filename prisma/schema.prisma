@@ -38,6 +38,8 @@ model Song {
   spotifyTrackId  String?
   appleMusicId    String?
   youtubeId       String?
+  albumImageUrl   String?
+  artistImageUrl  String?
   createdAt       DateTime @default(now())
 
   marketState  MarketState?

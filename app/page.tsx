@@ -68,40 +68,73 @@ function SongCard({ song }: { song: any }) {
   const change = Number(song.marketState?.change24hPct || 0);
   const tags = song.marketState?.tags || [];
 
+  // Fallback logic: album image -> artist image -> music note icon
+  const imageUrl = song.albumImageUrl || song.artistImageUrl;
+
   return (
     <Link
       href={`/song/${song.id}`}
-      className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-4"
+      className="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
     >
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 truncate">{song.title}</h3>
-          <p className="text-sm text-gray-600 truncate">{song.artistName}</p>
-        </div>
-        <div className="text-right ml-4">
-          <p className="font-bold text-gray-900">${price.toFixed(2)}</p>
-          <p
-            className={`text-sm font-medium ${
-              change >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {change >= 0 ? '+' : ''}
-            {change.toFixed(2)}%
-          </p>
-        </div>
-      </div>
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {tags.slice(0, 2).map((tag: string) => (
-            <span
-              key={tag}
-              className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded"
+      {/* Image Section */}
+      <div className="relative h-48 bg-gradient-to-br from-purple-100 to-pink-100">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${song.title} by ${song.artistName}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <svg
+              className="w-20 h-20 text-purple-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              {tag.replace(/_/g, ' ')}
-            </span>
-          ))}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+              />
+            </svg>
+          </div>
+        )}
+      </div>
+
+      {/* Content Section */}
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 truncate">{song.title}</h3>
+            <p className="text-sm text-gray-600 truncate">{song.artistName}</p>
+          </div>
+          <div className="text-right ml-4 flex-shrink-0">
+            <p className="font-bold text-gray-900">${price.toFixed(2)}</p>
+            <p
+              className={`text-sm font-medium ${
+                change >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {change >= 0 ? '+' : ''}
+              {change.toFixed(2)}%
+            </p>
+          </div>
         </div>
-      )}
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {tags.slice(0, 2).map((tag: string) => (
+              <span
+                key={tag}
+                className="inline-block px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded"
+              >
+                {tag.replace(/_/g, ' ')}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }
