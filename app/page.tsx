@@ -3,31 +3,49 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { Navigation } from '@/components/Navigation';
 import { SearchBar } from '@/components/SearchBar';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import Link from 'next/link';
 
+interface SongWithMarket {
+  id: string;
+  title: string;
+  artistName: string;
+  isCover: boolean;
+  releaseYear: number | null;
+  albumImageUrl: string | null;
+  artistImageUrl: string | null;
+  marketState: {
+    price: string;
+    change24hPct: string;
+    volume24h: string;
+    tags: string[];
+  } | null;
+}
+
 async function getMarketData(searchQuery?: string) {
-  const whereClause = searchQuery
-    ? {
-        OR: [
-          { title: { contains: searchQuery, mode: 'insensitive' as const } },
-          { artistName: { contains: searchQuery, mode: 'insensitive' as const } },
-        ],
-      }
-    : {};
+  const songs = await query<SongWithMarket>(`
+    SELECT
+      s.id,
+      s.title,
+      s."artistName",
+      s."isCover",
+      s."releaseYear",
+      s."albumImageUrl",
+      s."artistImageUrl",
+      json_build_object(
+        'price', m.price,
+        'change24hPct', m."change24hPct",
+        'volume24h', m."volume24h",
+        'tags', m.tags
+      ) as "marketState"
+    FROM "Song" s
+    LEFT JOIN "MarketState" m ON m."songId" = s.id
+    WHERE m.id IS NOT NULL
+    ORDER BY s."createdAt" DESC
+    LIMIT 100
+  `);
 
-  const songs = await prisma.song.findMany({
-    where: whereClause,
-    include: {
-      marketState: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 100, // Limit to 100 songs for performance
-  });
-
-  const songsWithMarket = songs.filter((s: typeof songs[number]) => s.marketState);
+  const songsWithMarket = songs.filter((s) => s.marketState);
 
   // Top Movers (by % change)
   const topMovers = songsWithMarket
@@ -167,24 +185,32 @@ function MarketSection({ title, songs }: { title: string; songs: any[] }) {
   );
 }
 
-async function searchSongs(query: string) {
-  const songs = await prisma.song.findMany({
-    where: {
-      OR: [
-        { title: { contains: query, mode: 'insensitive' } },
-        { artistName: { contains: query, mode: 'insensitive' } },
-      ],
-    },
-    include: {
-      marketState: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 50, // Limit search results
-  });
+async function searchSongs(searchQuery: string) {
+  const songs = await query<SongWithMarket>(`
+    SELECT
+      s.id,
+      s.title,
+      s."artistName",
+      s."isCover",
+      s."releaseYear",
+      s."albumImageUrl",
+      s."artistImageUrl",
+      json_build_object(
+        'price', m.price,
+        'change24hPct', m."change24hPct",
+        'volume24h', m."volume24h",
+        'tags', m.tags
+      ) as "marketState"
+    FROM "Song" s
+    LEFT JOIN "MarketState" m ON m."songId" = s.id
+    WHERE
+      m.id IS NOT NULL
+      AND (s.title ILIKE $1 OR s."artistName" ILIKE $1)
+    ORDER BY s."createdAt" DESC
+    LIMIT 50
+  `, [`%${searchQuery}%`]);
 
-  return songs.filter((s: typeof songs[number]) => s.marketState);
+  return songs.filter((s) => s.marketState);
 }
 
 export default async function Home({

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query, pool } from '@/lib/db';
 
 async function fetchAlbumArtFromiTunes(
   songTitle: string,
@@ -37,20 +37,12 @@ export async function GET() {
     console.log('Starting image fetch process...');
 
     // Get all songs without images
-    const songs = await prisma.song.findMany({
-      where: {
-        OR: [
-          { albumImageUrl: null },
-          { artistImageUrl: null },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        artistName: true,
-      },
-      take: 50, // Process in batches of 50
-    });
+    const songs = await query<{ id: string; title: string; artistName: string }>(`
+      SELECT id, title, "artistName"
+      FROM "Song"
+      WHERE "albumImageUrl" IS NULL OR "artistImageUrl" IS NULL
+      LIMIT 50
+    `);
 
     console.log(`Found ${songs.length} songs without images`);
 
@@ -66,15 +58,17 @@ export async function GET() {
       );
 
       if (albumImageUrl || artistImageUrl) {
-        await prisma.song.update({
-          where: { id: song.id },
-          data: {
-            albumImageUrl: albumImageUrl || undefined,
-            artistImageUrl: artistImageUrl || undefined,
-          },
-        });
-        console.log(`✓ Updated ${song.title}`);
-        updated++;
+        const client = await pool.connect();
+        try {
+          await client.query(
+            `UPDATE "Song" SET "albumImageUrl" = COALESCE($1, "albumImageUrl"), "artistImageUrl" = COALESCE($2, "artistImageUrl") WHERE id = $3`,
+            [albumImageUrl, artistImageUrl, song.id]
+          );
+          console.log(`✓ Updated ${song.title}`);
+          updated++;
+        } finally {
+          client.release();
+        }
       } else {
         console.log(`✗ No images found for ${song.title}`);
         failed++;

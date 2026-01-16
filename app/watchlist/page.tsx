@@ -2,25 +2,45 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { Navigation } from '@/components/Navigation';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 import Link from 'next/link';
 
+interface WatchlistItem {
+  id: string;
+  createdAt: Date;
+  song: {
+    id: string;
+    title: string;
+    artistName: string;
+    marketState: {
+      price: string;
+      change24hPct: string;
+      tags: string[];
+    } | null;
+  };
+}
+
 async function getWatchlistData(userId: string) {
-  const watchlist = await prisma.watchlist.findMany({
-    where: {
-      userId,
-    },
-    include: {
-      song: {
-        include: {
-          marketState: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+  const watchlist = await query<WatchlistItem>(`
+    SELECT
+      w.id,
+      w."createdAt",
+      json_build_object(
+        'id', s.id,
+        'title', s.title,
+        'artistName', s."artistName",
+        'marketState', json_build_object(
+          'price', m.price,
+          'change24hPct', m."change24hPct",
+          'tags', m.tags
+        )
+      ) as song
+    FROM "Watchlist" w
+    JOIN "Song" s ON s.id = w."songId"
+    LEFT JOIN "MarketState" m ON m."songId" = s.id
+    WHERE w."userId" = $1
+    ORDER BY w."createdAt" DESC
+  `, [userId]);
 
   return watchlist;
 }

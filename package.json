@@ -12,15 +12,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "seed": "tsx prisma/seed.ts"
+    "db:setup": "psql $DATABASE_URL -f db/schema.sql",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^6.2.0",
-    "@prisma/pg-worker": "^6.9.0",
     "@types/pg": "^8.16.0",
     "bcryptjs": "^2.4.3",
     "csv-parser": "^3.2.0",
@@ -35,7 +30,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@prisma/engines": "^7.2.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.0.0",
     "@types/node-cron": "^3.0.11",
@@ -46,7 +40,6 @@
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.4",
     "postcss": "^8.4.0",
-    "prisma": "^6.2.0",
     "tailwindcss": "^3.4.0",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0"
