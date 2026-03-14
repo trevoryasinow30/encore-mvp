@@ -12,6 +12,7 @@ interface SongWithMarket {
   artistName: string;
   isCover: boolean;
   releaseYear: number | null;
+  youtubeId: string | null;
   albumImageUrl: string | null;
   artistImageUrl: string | null;
   marketState: {
@@ -19,6 +20,11 @@ interface SongWithMarket {
     change24hPct: string;
     volume24h: string;
     tags: string[];
+  } | null;
+  lastfmMetric: {
+    playcount: string;
+    listeners: string;
+    playcountDelta: string;
   } | null;
 }
 
@@ -30,6 +36,7 @@ async function getMarketData(searchQuery?: string) {
       s."artistName",
       s."isCover",
       s."releaseYear",
+      s."youtubeId",
       s."albumImageUrl",
       s."artistImageUrl",
       json_build_object(
@@ -37,9 +44,18 @@ async function getMarketData(searchQuery?: string) {
         'change24hPct', m."change24hPct",
         'volume24h', m."volume24h",
         'tags', m.tags
-      ) as "marketState"
+      ) as "marketState",
+      CASE
+        WHEN lf."songId" IS NULL THEN NULL
+        ELSE json_build_object(
+          'playcount', lf.playcount,
+          'listeners', lf.listeners,
+          'playcountDelta', lf."playcountDelta"
+        )
+      END as "lastfmMetric"
     FROM "Song" s
     LEFT JOIN "MarketState" m ON m."songId" = s.id
+    LEFT JOIN "LastfmMetric" lf ON lf."songId" = s.id
     WHERE m.id IS NOT NULL
     ORDER BY s."createdAt" DESC
     LIMIT 100
@@ -68,9 +84,11 @@ async function getMarketData(searchQuery?: string) {
     .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.change24hPct) - Number(a.marketState!.change24hPct))
     .slice(0, 10);
 
-  // Trending (most traded)
+  // Trending (highest external listening volume)
   const trending = songsWithMarket
-    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) => Number(b.marketState!.volume24h) - Number(a.marketState!.volume24h))
+    .sort((a: typeof songsWithMarket[number], b: typeof songsWithMarket[number]) =>
+      Number(b.lastfmMetric?.playcount || 0) - Number(a.lastfmMetric?.playcount || 0)
+    )
     .slice(0, 10);
 
   return {
@@ -86,8 +104,10 @@ function SongCard({ song }: { song: any }) {
   const change = Number(song.marketState?.change24hPct || 0);
   const tags = song.marketState?.tags || [];
 
-  // Fallback logic: album image -> artist image -> music note icon
-  const imageUrl = song.albumImageUrl || song.artistImageUrl;
+  const imageUrl =
+    song.albumImageUrl ||
+    song.artistImageUrl ||
+    (song.youtubeId ? `https://img.youtube.com/vi/${song.youtubeId}/hqdefault.jpg` : null);
 
   return (
     <Link
@@ -97,6 +117,8 @@ function SongCard({ song }: { song: any }) {
       {/* Image Section - Smaller and cleaner */}
       <div className="relative h-32 bg-gradient-to-br from-purple-100 to-pink-100">
         {imageUrl ? (
+          // Album art is imported from varying third-party hosts, so keep a plain img here.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={`${song.title} by ${song.artistName}`}
@@ -193,6 +215,7 @@ async function searchSongs(searchQuery: string) {
       s."artistName",
       s."isCover",
       s."releaseYear",
+      s."youtubeId",
       s."albumImageUrl",
       s."artistImageUrl",
       json_build_object(
@@ -200,9 +223,18 @@ async function searchSongs(searchQuery: string) {
         'change24hPct', m."change24hPct",
         'volume24h', m."volume24h",
         'tags', m.tags
-      ) as "marketState"
+      ) as "marketState",
+      CASE
+        WHEN lf."songId" IS NULL THEN NULL
+        ELSE json_build_object(
+          'playcount', lf.playcount,
+          'listeners', lf.listeners,
+          'playcountDelta', lf."playcountDelta"
+        )
+      END as "lastfmMetric"
     FROM "Song" s
     LEFT JOIN "MarketState" m ON m."songId" = s.id
+    LEFT JOIN "LastfmMetric" lf ON lf."songId" = s.id
     WHERE
       m.id IS NOT NULL
       AND (s.title ILIKE $1 OR s."artistName" ILIKE $1)
@@ -236,7 +268,7 @@ export default async function Home({
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Markets</h1>
           <p className="text-gray-600 mb-6">
-            Trade the cultural momentum of music. All prices in fantasy currency.
+            Trade the cultural momentum of music. All prices are fantasy currency, and when configured they are anchored to cached Last.fm listening data.
           </p>
           <SearchBar />
         </div>
@@ -265,7 +297,7 @@ export default async function Home({
             <MarketSection title="🔥 Top Movers Today" songs={marketData!.topMovers} />
             <MarketSection title="⏮️ Re-Emerging Classics" songs={marketData!.reEmerging} />
             <MarketSection title="🎤 Covers Heating Up" songs={marketData!.covers} />
-            <MarketSection title="📈 Trending (Most Traded)" songs={marketData!.trending} />
+            <MarketSection title="📻 Trending by Last.fm Plays" songs={marketData!.trending} />
           </>
         )}
       </main>

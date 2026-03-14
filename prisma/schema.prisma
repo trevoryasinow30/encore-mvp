@@ -2,9 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
-  binaryTargets   = []
+  provider      = "prisma-client-js"
+  binaryTargets = []
 }
 
 datasource db {
@@ -45,6 +44,7 @@ model Song {
   createdAt       DateTime @default(now())
 
   marketState  MarketState?
+  lastfmMetric LastfmMetric?
   priceHistory PriceHistory[]
   trades       Trade[]
   positions    Position[]
@@ -56,6 +56,19 @@ model Song {
   @@index([artistName])
   @@index([isCover])
   @@index([releaseYear])
+}
+
+model LastfmMetric {
+  songId          String   @id
+  song            Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  playcount       Decimal  @db.Decimal(20, 0) @default(0)
+  listeners       Decimal  @db.Decimal(20, 0) @default(0)
+  playcountDelta  Decimal  @db.Decimal(20, 0) @default(0)
+  syncedAt        DateTime @default(now())
+
+  @@index([syncedAt])
+  @@index([playcount])
+  @@index([playcountDelta])
 }
 
 model MarketState {

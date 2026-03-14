@@ -8,11 +8,19 @@ import { getTagExplanation } from '@/lib/signals';
 import { PriceChart } from '@/components/PriceChart';
 import { MusicPlayer } from '@/components/MusicPlayer';
 
+interface ITunesSearchResponse {
+  results?: Array<{
+    artworkUrl100?: string;
+    previewUrl?: string;
+  }>;
+}
+
 async function getSongData(songId: string) {
   const song = await prisma.song.findUnique({
     where: { id: songId },
     include: {
       marketState: true,
+      lastfmMetric: true,
       priceHistory: {
         orderBy: {
           createdAt: 'asc',
@@ -38,6 +46,40 @@ async function getSongData(songId: string) {
   return song;
 }
 
+async function getFallbackMedia(title: string, artistName: string) {
+  try {
+    const query = encodeURIComponent(`${title} ${artistName}`);
+    const response = await fetch(
+      `https://itunes.apple.com/search?term=${query}&entity=song&limit=1`,
+      {
+        next: { revalidate: 86400 },
+      }
+    );
+
+    if (!response.ok) {
+      return {
+        artworkUrl: null,
+        previewUrl: null,
+      };
+    }
+
+    const data = (await response.json()) as ITunesSearchResponse;
+    const result = data.results?.[0];
+    const artworkUrl = result?.artworkUrl100;
+
+    return {
+      artworkUrl: artworkUrl ? artworkUrl.replace('100x100bb', '600x600bb') : null,
+      previewUrl: result?.previewUrl ?? null,
+    };
+  } catch (error) {
+    console.error('Failed to fetch fallback media:', error);
+    return {
+      artworkUrl: null,
+      previewUrl: null,
+    };
+  }
+}
+
 export default async function SongPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
 
@@ -54,8 +96,14 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
 
   const price = Number(song.marketState?.price || 0);
   const change = Number(song.marketState?.change24hPct || 0);
-  const volume = Number(song.marketState?.volume24h || 0);
   const tags = song.marketState?.tags || [];
+  const lastfmPlays = Number(song.lastfmMetric?.playcount || 0);
+  const lastfmListeners = Number(song.lastfmMetric?.listeners || 0);
+  const listeningDelta = Number(song.lastfmMetric?.playcountDelta || 0);
+  const fallbackMedia =
+    !song.albumImageUrl && !song.artistImageUrl
+      ? await getFallbackMedia(song.title, song.artistName)
+      : { artworkUrl: null, previewUrl: null };
 
   // Format price history for chart
   const priceHistory = song.priceHistory.map((ph: typeof song.priceHistory[number]) => ({
@@ -93,9 +141,23 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
                 {change >= 0 ? '+' : ''}
                 {change.toFixed(2)}% (24h)
               </p>
-              <p className="text-sm text-gray-600 mt-2">
-                Volume: ${volume.toFixed(2)}
-              </p>
+              {song.lastfmMetric ? (
+                <>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Last.fm plays: {lastfmPlays.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Last.fm listeners: {lastfmListeners.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Recent listening delta: {listeningDelta.toLocaleString()}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-600 mt-2">
+                  Last.fm data not synced yet
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -106,6 +168,10 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
             <h2 className="text-xl font-bold text-gray-900 mb-4">🎵 Listen Now</h2>
             <MusicPlayer
               spotifyTrackId={song.spotifyTrackId}
+              youtubeId={song.youtubeId}
+              previewUrl={fallbackMedia.previewUrl}
+              albumImageUrl={song.albumImageUrl || fallbackMedia.artworkUrl}
+              artistImageUrl={song.artistImageUrl}
               title={song.title}
               artistName={song.artistName}
             />
@@ -148,9 +214,9 @@ export default async function SongPage({ params }: { params: Promise<{ id: strin
 
             {/* Recent Trades */}
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Trades</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Encore Trades</h2>
               {song.trades.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No trades yet</p>
+                <p className="text-gray-500 text-center py-8">No user trades yet</p>
               ) : (
                 <div className="space-y-2">
                   {song.trades.map((trade: typeof song.trades[number]) => (

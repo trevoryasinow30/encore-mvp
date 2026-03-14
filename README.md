@@ -9,46 +9,48 @@ A fantasy "song market" where users trade positions in songs based on cultural m
 3. **Portfolio** - Track holdings, unrealized P&L, and total equity
 4. **Leaderboard** - Compete with other traders ranked by total equity
 5. **Market Signals** - Algorithmic tags explaining price movements (TikTok spikes, re-emergence, etc.)
+6. **External Pricing Anchor** - Cached Last.fm listening data can be used to ground prices before user trading activity exists
 
 ## Tech Stack
 
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, raw PostgreSQL (`pg`)
+- **Backend**: Next.js API Routes, PostgreSQL via `pg` and Prisma
 - **Database**: PostgreSQL (via Docker)
 - **Authentication**: NextAuth.js (credentials provider)
 - **Charts**: Recharts
 
 ## Quick Start
 
-### GitHub Codespaces (recommended)
+### Easiest local path
 
-Open the repo in a Codespace — setup runs automatically via `.devcontainer`. When the terminal is ready, just run:
-
-```bash
-pnpm dev
-```
-
-If you're opening a Codespace for the first time and setup hasn't run yet:
+Prerequisites: Node.js 18+, pnpm, Docker Desktop
 
 ```bash
-bash setup.sh
-pnpm dev
+./start.sh
 ```
 
-### Local Development
+That command handles first-run setup automatically, starts PostgreSQL, applies the schema, seeds demo data, and launches the Next.js dev server.
 
-Prerequisites: Node.js 18+, pnpm, Docker
+Open [http://localhost:3000](http://localhost:3000)
+
+### Bootstrap without starting the server
+
+If you only want to provision the app once and start it yourself later:
 
 ```bash
 bash setup.sh
 pnpm dev
 ```
 
-`setup.sh` handles everything: creates `.env`, starts PostgreSQL, applies the schema, and seeds demo data.
+### GitHub Codespaces
 
-Navigate to [http://localhost:3000](http://localhost:3000)
+Open the repo in a Codespace and run:
 
-### Demo Credentials
+```bash
+./start.sh
+```
+
+### Demo credentials
 
 ```
 demo / demo123
@@ -90,16 +92,18 @@ LOOKBACK_MINUTES = 60       // Analyze last 60 min of trades
 
 **How Prices Move**:
 
-1. Calculate net order imbalance: `buyNotional - sellNotional`
-2. Compute price impact: `clamp(net / LIQUIDITY_CONSTANT, -MAX_STEP, +MAX_STEP)`
-3. Apply to current price: `newPrice = oldPrice * (1 + impact)`
-4. Enforce minimum price floor
-5. Songs with no trades get small random walk (±1%) to keep interesting
+1. Sync Last.fm playcounts and listener counts into a local cache
+2. Rank the tracked songs by a weighted listening score derived from playcount and listeners
+3. Map that rank into the local price band
+4. If users have traded a song recently, apply a bounded in-app impact around the Last.fm anchor
+5. If Last.fm data is not configured yet, the repo falls back to demo pricing behavior
 
 **Running Market Tick**:
 
 - **Manual**: Use the Admin panel → "Run Market Tick Now" button
-- **Automated**: Set up a cron job to POST to `/api/admin/market-tick` every 1-5 minutes
+- **Automated**: `./start.sh` runs the local market automation alongside Next.js
+- **Last.fm sync**: Run `pnpm lastfm:sync` after setting `LASTFM_API_KEY`
+- **Metadata sync**: Run `pnpm spotify:sync` after setting `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`
 
 Example cron (every 3 minutes):
 
@@ -113,22 +117,19 @@ Example cron (every 3 minutes):
 
 Located in `lib/signals.ts`:
 
-Generates deterministic but time-varying signals for each song:
+Generates tags from cached Last.fm metrics and price movement:
 
-- **TikTok Velocity**: Simulated viral momentum
-- **Spotify Popularity Delta**: Chart movement
-- **YouTube Views Delta**: Video engagement
-- **Social Mentions Trend**: Buzz tracking
+- **LASTFM_LEADER**: High absolute listening volume inside the tracked catalog
+- **LISTENING_MOMENTUM**: Recent playcount growth is strong versus peers
+- **RE-EMERGING**: Older songs with fresh listening momentum
+- **HOT_COVER**: Covers with meaningful listening growth
 
 **Tag Generation Rules**:
 
-- `RE-EMERGING`: Song age >= 5 years + TikTok velocity > 0.3
-- `TIKTOK_SPIKE`: TikTok velocity > 0.4
-- `SPOTIFY_MOMENTUM`: Spotify delta > 0.3
-- `TOP_MOVER`: 24h price change > +20%
-- `HOT_COVER`: Cover version + social buzz
-
-Signals update every 30 minutes (deterministic seed based on time).
+- `LASTFM_LEADER`: top listening percentile in the tracked catalog
+- `LISTENING_MOMENTUM`: top recent playcount-delta percentile
+- `TOP_MOVER`: 24h price change > +10%
+- `HOT_COVER`: cover version with meaningful listening momentum
 
 ## Project Structure
 
@@ -153,17 +154,24 @@ encore-mvp/
 ├── components/
 │   ├── Navigation.tsx
 │   └── TradeModule.tsx
+├── docs/
+│   └── market-data.md      # Pricing-source decisions and transparency notes
 ├── db/
 │   └── schema.sql          # Database schema
 ├── lib/
 │   ├── auth.ts             # NextAuth config
+│   ├── lastfm-market.ts    # Last.fm sync + price-anchor logic
 │   ├── trading.ts          # Trade execution logic
 │   ├── market-tick.ts      # Pricing engine
 │   └── signals.ts          # Signal/tag generation
-├── scripts/
+├── prisma/
+│   ├── schema.prisma
 │   └── seed.ts             # Seed script
+├── scripts/
+│   └── setup-db.ts         # Apply db/schema.sql
 ├── docker-compose.yml      # PostgreSQL setup
 ├── setup.sh                # One-command setup script
+├── start.sh                # One-command bootstrap + dev script
 └── package.json
 ```
 
@@ -172,6 +180,8 @@ encore-mvp/
 **User** - id, username, email, password (hashed)
 
 **Song** - id, title, artistName, isCover, releaseYear, spotifyTrackId, appleMusicId, youtubeId
+
+**LastfmMetric** (one per song when synced) - playcount, listeners, playcountDelta, syncedAt
 
 **MarketState** (one per song) - price, change24hPct, volume24h, traders24h, tags
 
@@ -185,14 +195,22 @@ encore-mvp/
 
 ```bash
 # Development
+./start.sh            # First-run friendly local entry point
 pnpm dev              # Start dev server
+pnpm dev:with-cron    # Start dev server plus local market automation
 pnpm build            # Production build
 pnpm start            # Production server
 pnpm lint             # Run ESLint
 
 # Database
-pnpm db:setup         # Apply schema (runs db/schema.sql)
+pnpm db:setup         # Apply schema from db/schema.sql
+pnpm db:ensure-lastfm # Create the Last.fm metrics table on an existing database
+pnpm prisma:generate  # Generate Prisma client
 pnpm seed             # Seed database with songs and users
+
+# External data
+pnpm lastfm:sync      # Sync Last.fm playcounts/listeners and initialize prices
+pnpm spotify:sync     # Backfill Spotify track IDs and artwork
 
 # Docker
 docker compose up -d         # Start PostgreSQL
@@ -218,13 +236,13 @@ const LOOKBACK_MINUTES = 60;       // Window for trade analysis
 Edit `lib/signals.ts`:
 
 ```typescript
-if (signals.tiktokVelocity > 0.4) tags.push('TIKTOK_SPIKE');
-if (change24hPct > 20) tags.push('TOP_MOVER');
+if (popularityPercentile >= 0.85) tags.push('LASTFM_LEADER');
+if (momentumPercentile >= 0.85) tags.push('LISTENING_MOMENTUM');
 ```
 
 ### Starting Balance
 
-Edit `scripts/seed.ts` and change the deposit amount (default: `10000`).
+Edit `prisma/seed.ts` and change the deposit amount (default: `10000`).
 
 ## API Routes
 
@@ -261,6 +279,7 @@ ADMIN_PASSWORD="<secure-password>"
 Apply schema and seed on first deploy:
 
 ```bash
+pnpm prisma:generate
 pnpm db:setup
 pnpm seed
 ```
@@ -281,6 +300,11 @@ Verify PostgreSQL is running:
 ```bash
 docker compose ps
 docker compose logs postgres
+```
+
+If this is a brand-new clone, run:
+```bash
+./start.sh
 ```
 
 ### Port already in use

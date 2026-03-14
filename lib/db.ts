@@ -4,8 +4,16 @@ const globalForDb = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    'DATABASE_URL is not set. If you are running a standalone script, load .env before importing the database client.'
+  );
+}
+
 export const pool = globalForDb.pool ?? new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
 });
 
 if (process.env.NODE_ENV !== 'production') {

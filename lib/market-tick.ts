@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
-import { generateSignals, generateTags } from '@/lib/signals';
+import { buildLastfmPriceAnchors } from '@/lib/lastfm-market';
+import { generateTags } from '@/lib/signals';
 
 // Market configuration
 const LIQUIDITY_CONSTANT = 10000; // Higher = less volatile
@@ -14,6 +15,7 @@ export async function runMarketTick() {
   const songs = await prisma.song.findMany({
     include: {
       marketState: true,
+      lastfmMetric: true,
       trades: {
         where: {
           createdAt: {
@@ -23,6 +25,8 @@ export async function runMarketTick() {
       },
     },
   });
+  const lastfmAnchors = buildLastfmPriceAnchors(songs);
+  const hasExternalListeningData = lastfmAnchors.size > 0;
 
   const updatePromises = songs.map(async (song) => {
     const oldPrice = song.marketState?.price
@@ -43,12 +47,12 @@ export async function runMarketTick() {
       -MAX_STEP,
       Math.min(MAX_STEP, net / LIQUIDITY_CONSTANT)
     );
+    const lastfmAnchor = lastfmAnchors.get(song.id);
+    let newPrice = lastfmAnchor?.basePrice ?? oldPrice;
 
-    // Apply impact to price
-    let newPrice = oldPrice * (1 + impact);
-
-    // Add some random walk for songs with no trades (to keep it interesting)
-    if (song.trades.length === 0) {
+    if (song.trades.length > 0) {
+      newPrice = (lastfmAnchor?.basePrice ?? oldPrice) * (1 + impact);
+    } else if (!lastfmAnchor && !hasExternalListeningData) {
       const randomWalk = (Math.random() - 0.5) * 0.02; // ±1% random movement
       newPrice = oldPrice * (1 + randomWalk);
     }
@@ -59,13 +63,18 @@ export async function runMarketTick() {
     // Calculate 24h change
     const change24hPct = ((newPrice - oldPrice) / oldPrice) * 100;
 
-    // Calculate volume and unique traders
-    const volume24h = buyNotional + sellNotional;
+    // Until real in-app trading volume matters, `volume24h` stores cached Last.fm play delta.
+    const volume24h = lastfmAnchor?.playcountDelta ?? 0;
     const uniqueTraders = new Set(song.trades.map((t) => t.userId)).size;
 
-    // Generate signals and tags
-    const signals = generateSignals(song.id, song.releaseYear);
-    const tags = generateTags(signals, change24hPct, song.releaseYear, song.isCover);
+    const tags = generateTags({
+      change24hPct,
+      releaseYear: song.releaseYear,
+      isCover: song.isCover,
+      popularityPercentile: lastfmAnchor?.popularityPercentile ?? 0,
+      momentumPercentile: lastfmAnchor?.momentumPercentile ?? 0,
+      playcountDelta: lastfmAnchor?.playcountDelta ?? 0,
+    });
 
     // Update or create market state
     if (song.marketState) {

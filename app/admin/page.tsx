@@ -7,16 +7,15 @@ import { Navigation } from '@/components/Navigation';
 export default function Admin() {
   const { data: session } = useSession();
   const [password, setPassword] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [marketStats, setMarketStats] = useState<any>(null);
 
   useEffect(() => {
-    if (authenticated) {
+    if (session) {
       fetchMarketStats();
     }
-  }, [authenticated]);
+  }, [session]);
 
   const fetchMarketStats = async () => {
     try {
@@ -28,16 +27,12 @@ export default function Admin() {
     }
   };
 
-  const handleAuth = () => {
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD || password === 'admin123') {
-      setAuthenticated(true);
-      setMessage('');
-    } else {
-      setMessage('Invalid password');
-    }
-  };
-
   const runMarketTick = async () => {
+    if (!password.trim()) {
+      setMessage('Enter the admin password before running a market tick.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
@@ -73,48 +68,6 @@ export default function Admin() {
     );
   }
 
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="bg-white rounded-lg shadow p-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-6">Admin Panel</h1>
-            <p className="text-gray-600 mb-6">Enter admin password to continue</p>
-
-            <div className="space-y-4">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAuth()}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="Admin password"
-              />
-
-              {message && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {message}
-                </div>
-              )}
-
-              <button
-                onClick={handleAuth}
-                className="w-full bg-purple-600 text-white py-3 rounded-lg font-medium hover:bg-purple-700"
-              >
-                Authenticate
-              </button>
-            </div>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">Default password: admin123</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
@@ -135,9 +88,9 @@ export default function Admin() {
             </div>
 
             <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">24h Volume</p>
+              <p className="text-sm text-gray-600 mb-1">Recent Listening Delta</p>
               <p className="text-3xl font-bold text-gray-900">
-                ${marketStats.totalVolume?.toFixed(2) || '0.00'}
+                {Math.round(marketStats.totalVolume || 0).toLocaleString()}
               </p>
             </div>
 
@@ -155,6 +108,22 @@ export default function Admin() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Market Controls</h2>
 
           <div className="space-y-4">
+            <div className="max-w-md">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="admin123"
+              />
+              <p className="text-sm text-gray-600 mt-2">
+                Default local password: <code>admin123</code>
+              </p>
+            </div>
+
             <div>
               <button
                 onClick={runMarketTick}
@@ -164,7 +133,7 @@ export default function Admin() {
                 {loading ? 'Running Market Tick...' : '🔄 Run Market Tick Now'}
               </button>
               <p className="text-sm text-gray-600 mt-2">
-                Updates all song prices based on trading activity and signals
+                Updates prices from cached Last.fm listening data and any recent Encore trades.
               </p>
             </div>
 
@@ -190,17 +159,13 @@ export default function Admin() {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-900 mb-2">Initial Setup</h3>
               <p className="text-sm text-blue-800 mb-3">
-                If you haven&apos;t set up the database yet, run these commands:
+                Use the repo bootstrap scripts instead of running setup pieces manually:
               </p>
               <div className="bg-blue-900 text-blue-100 p-3 rounded font-mono text-sm overflow-x-auto">
-                <div># Start PostgreSQL with Docker</div>
-                <div>docker compose up -d</div>
-                <div className="mt-2"># Generate Prisma client</div>
-                <div>pnpm prisma:generate</div>
-                <div className="mt-2"># Run migrations</div>
-                <div>pnpm prisma:migrate</div>
-                <div className="mt-2"># Seed the database</div>
-                <div>pnpm seed</div>
+                <div># First run</div>
+                <div>./start.sh</div>
+                <div className="mt-2"># If you only want bootstrap without starting dev mode</div>
+                <div>bash setup.sh</div>
               </div>
             </div>
 

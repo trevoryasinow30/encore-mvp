@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -11,29 +12,54 @@ interface iTunesSearchResult {
   }>;
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchAlbumArtFromiTunes(
   songTitle: string,
   artistName: string
 ): Promise<string | null> {
-  try {
-    const query = encodeURIComponent(`${songTitle} ${artistName}`);
-    const url = `https://itunes.apple.com/search?term=${query}&entity=song&limit=1`;
+  const query = encodeURIComponent(`${songTitle} ${artistName}`);
+  const url = `https://itunes.apple.com/search?term=${query}&entity=song&limit=1`;
 
-    const response = await fetch(url);
-    const data: iTunesSearchResult = await response.json();
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'encore-mvp-artwork-fetcher',
+        },
+      });
+      const body = await response.text();
 
-    if (data.results && data.results.length > 0) {
-      // Get the artwork URL and upgrade to higher resolution (600x600)
-      const artworkUrl = data.results[0].artworkUrl100;
-      const highResUrl = artworkUrl.replace('100x100bb', '600x600bb');
-      return highResUrl;
+      if (!response.ok) {
+        if (attempt < 4) {
+          await sleep(1500 * attempt);
+          continue;
+        }
+        return null;
+      }
+
+      const data = JSON.parse(body) as iTunesSearchResult;
+
+      if (data.results && data.results.length > 0) {
+        const artworkUrl = data.results[0].artworkUrl100;
+        return artworkUrl.replace('100x100bb', '600x600bb');
+      }
+
+      return null;
+    } catch (error) {
+      if (attempt < 4) {
+        await sleep(1500 * attempt);
+        continue;
+      }
+
+      console.error(`Error fetching artwork for ${songTitle}:`, error);
+      return null;
     }
-
-    return null;
-  } catch (error) {
-    console.error(`Error fetching artwork for ${songTitle}:`, error);
-    return null;
   }
+
+  return null;
 }
 
 async function updateAllSongImages() {
@@ -79,8 +105,8 @@ async function updateAllSongImages() {
       failCount++;
     }
 
-    // Rate limiting: wait 200ms between requests to be nice to iTunes API
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Keep the request pace conservative to avoid iTunes rate limiting.
+    await sleep(450);
   }
 
   console.log('\n📊 Summary:');

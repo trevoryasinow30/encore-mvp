@@ -6,17 +6,10 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { username: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = session.user.id;
 
     const { songId } = await request.json();
 
@@ -28,7 +21,7 @@ export async function POST(request: Request) {
     const existing = await prisma.watchlist.findUnique({
       where: {
         userId_songId: {
-          userId: user.id,
+          userId,
           songId,
         },
       },
@@ -41,7 +34,7 @@ export async function POST(request: Request) {
     // Add to watchlist
     const watchlistItem = await prisma.watchlist.create({
       data: {
-        userId: user.id,
+        userId,
         songId,
       },
       include: {
@@ -66,17 +59,10 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { username: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = session.user.id;
 
     const { songId } = await request.json();
 
@@ -87,7 +73,7 @@ export async function DELETE(request: Request) {
     // Remove from watchlist
     await prisma.watchlist.deleteMany({
       where: {
-        userId: user.id,
+        userId,
         songId,
       },
     });
@@ -105,21 +91,14 @@ export async function DELETE(request: Request) {
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const user = await prisma.user.findUnique({
-      where: { username: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = session.user.id;
 
     const watchlist = await prisma.watchlist.findMany({
       where: {
-        userId: user.id,
+        userId,
       },
       include: {
         song: {

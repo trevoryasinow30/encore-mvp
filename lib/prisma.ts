@@ -7,7 +7,15 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
-const pool = globalForPrisma.pool ?? new Pool({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error(
+    'DATABASE_URL is not set. If you are running a standalone script, load .env before importing Prisma.'
+  );
+}
+
+const pool = globalForPrisma.pool ?? new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });

@@ -6,12 +6,12 @@
 - **Docker Desktop** installed and running ([Download](https://www.docker.com/products/docker-desktop))
 - **Git** installed
 
-## One-Command Setup
+## One-Command Start
 
 Run this in your terminal:
 
 ```bash
-./setup.sh
+./start.sh
 ```
 
 This will:
@@ -20,14 +20,44 @@ This will:
 3. ✅ Generate Prisma client
 4. ✅ Create database schema
 5. ✅ Seed with 80+ songs and demo users
-
-## Start the App
-
-```bash
-pnpm dev
-```
+6. ✅ Launch the local dev server and local market automation
 
 Open **http://localhost:3000**
+
+## Bootstrap Only
+
+```bash
+bash setup.sh
+```
+
+## Last.fm Pricing Sync
+
+If you want prices to be anchored to real listening data, add `LASTFM_API_KEY` to `.env`.
+Then either start the app normally:
+
+```bash
+./start.sh
+```
+
+or run the sync manually:
+
+```bash
+pnpm lastfm:sync
+```
+
+The local automation uses cached Last.fm playcounts and listeners for pricing. Without a
+Last.fm API key, the app stays in demo pricing mode.
+
+## Spotify Metadata Sync
+
+If you want to backfill Spotify track IDs and artwork for songs,
+add `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` to `.env`, then run:
+
+```bash
+pnpm spotify:sync
+```
+
+This is optional and does not control pricing.
 
 ## Sign In
 
@@ -54,28 +84,31 @@ Password: demo123
 
 - URL: **http://localhost:3000/admin**
 - Password: `admin123`
-- Use it to manually run market ticks (updates all song prices)
+- Use it to manually run market ticks.
 
 ## Manual Setup (if setup.sh doesn't work)
 
 ```bash
 # 1. Start database
-docker compose up -d
+docker compose up -d postgres
 
 # 2. Install dependencies
 pnpm install
 
 # 3. Generate Prisma client
-pnpm prisma generate
+pnpm prisma:generate
 
 # 4. Create database schema
-pnpm prisma migrate dev
+pnpm db:setup
+
+# 4b. Ensure the Last.fm metrics table exists
+pnpm db:ensure-lastfm
 
 # 5. Seed database
 pnpm seed
 
 # 6. Start dev server
-pnpm dev
+pnpm dev:with-cron
 ```
 
 ## Troubleshooting
@@ -101,4 +134,4 @@ docker compose restart
 
 ## Need Help?
 
-Check the full **README.md** for detailed documentation.
+Check the full **README.md** and **docs/market-data.md** for detailed documentation.

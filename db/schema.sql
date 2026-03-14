@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS "LimitOrder" CASCADE;
 DROP TABLE IF EXISTS "PriceAlert" CASCADE;
 DROP TABLE IF EXISTS "Watchlist" CASCADE;
 DROP TABLE IF EXISTS "PriceHistory" CASCADE;
+DROP TABLE IF EXISTS "LastfmMetric" CASCADE;
 DROP TABLE IF EXISTS "Ledger" CASCADE;
 DROP TABLE IF EXISTS "Position" CASCADE;
 DROP TABLE IF EXISTS "Trade" CASCADE;
@@ -57,6 +58,20 @@ CREATE INDEX "Song_title_idx" ON "Song"("title");
 CREATE INDEX "Song_artistName_idx" ON "Song"("artistName");
 CREATE INDEX "Song_isCover_idx" ON "Song"("isCover");
 CREATE INDEX "Song_releaseYear_idx" ON "Song"("releaseYear");
+
+-- Last.fm metrics cache
+CREATE TABLE "LastfmMetric" (
+  "songId" TEXT PRIMARY KEY,
+  "playcount" DECIMAL(20, 0) NOT NULL DEFAULT 0,
+  "listeners" DECIMAL(20, 0) NOT NULL DEFAULT 0,
+  "playcountDelta" DECIMAL(20, 0) NOT NULL DEFAULT 0,
+  "syncedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "LastfmMetric_songId_fkey" FOREIGN KEY ("songId") REFERENCES "Song"("id") ON DELETE CASCADE
+);
+
+CREATE INDEX "LastfmMetric_syncedAt_idx" ON "LastfmMetric"("syncedAt");
+CREATE INDEX "LastfmMetric_playcount_idx" ON "LastfmMetric"("playcount");
+CREATE INDEX "LastfmMetric_playcountDelta_idx" ON "LastfmMetric"("playcountDelta");
 
 -- MarketState table
 CREATE TABLE "MarketState" (

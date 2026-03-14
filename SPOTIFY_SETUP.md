@@ -31,7 +31,11 @@ This guide will help you set up Spotify API credentials to import thousands of s
 ```env
 SPOTIFY_CLIENT_ID="paste_your_client_id_here"
 SPOTIFY_CLIENT_SECRET="paste_your_client_secret_here"
+SPOTIFY_MARKET="US"
 ```
+
+`SPOTIFY_MARKET` should be a two-letter country code such as `US`. Spotify's track endpoints
+need a market when you use app-only credentials.
 
 ## Step 5: Run the Importer
 

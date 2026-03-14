@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import SpotifyWebApi from 'spotify-web-api-node';
 import { PrismaClient } from '@prisma/client';
 
@@ -66,6 +67,7 @@ async function importSong(track: any, stats: ImportStats) {
   const title = spotifyTrack.name;
   const artistName = spotifyTrack.artists[0]?.name || 'Unknown Artist';
   const spotifyTrackId = spotifyTrack.id;
+  const albumImageUrl = spotifyTrack.album?.images?.[0]?.url || null;
 
   // Extract release year from album
   const releaseDate = spotifyTrack.album?.release_date;
@@ -87,7 +89,10 @@ async function importSong(track: any, stats: ImportStats) {
       if (!existing.spotifyTrackId && spotifyTrackId) {
         await prisma.song.update({
           where: { id: existing.id },
-          data: { spotifyTrackId },
+          data: {
+            spotifyTrackId,
+            albumImageUrl: existing.albumImageUrl || albumImageUrl,
+          },
         });
         console.log(`  ↻ Updated Spotify ID: ${title} - ${artistName}`);
       }
@@ -102,6 +107,7 @@ async function importSong(track: any, stats: ImportStats) {
         artistName,
         releaseYear,
         spotifyTrackId,
+        albumImageUrl,
         isCover: false,
       },
     });
