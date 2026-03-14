@@ -13,100 +13,50 @@ A fantasy "song market" where users trade positions in songs based on cultural m
 ## Tech Stack
 
 - **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL
+- **Backend**: Next.js API Routes, raw PostgreSQL (`pg`)
+- **Database**: PostgreSQL (via Docker)
 - **Authentication**: NextAuth.js (credentials provider)
-- **Charts**: Recharts (ready to implement)
-
-## Prerequisites
-
-- Node.js 18+ and pnpm
-- Docker and Docker Compose (for PostgreSQL)
-- Git
+- **Charts**: Recharts
 
 ## Quick Start
 
-### 1. Clone and Install
+### GitHub Codespaces (recommended)
 
-```bash
-cd encore-mvp
-pnpm install
-```
-
-### 2. Environment Setup
-
-Copy `.env.example` to `.env`:
-
-```bash
-cp .env.example .env
-```
-
-The default `.env` should work for local development:
-
-```env
-DATABASE_URL="postgresql://encore:encore123@localhost:5432/encore_db?schema=public"
-NEXTAUTH_SECRET="dev-secret-key-not-for-production-use-only"
-NEXTAUTH_URL="http://localhost:3000"
-ADMIN_PASSWORD="admin123"
-```
-
-### 3. Start PostgreSQL
-
-```bash
-docker compose up -d
-```
-
-This starts a PostgreSQL database on `localhost:5432`.
-
-### 4. Database Setup
-
-Generate Prisma client:
-
-```bash
-pnpm prisma generate
-```
-
-If this fails due to network issues with Prisma binaries, try:
-
-```bash
-PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 pnpm prisma generate
-```
-
-Run migrations to create database schema:
-
-```bash
-pnpm prisma:migrate
-```
-
-Seed the database with songs and demo users:
-
-```bash
-pnpm seed
-```
-
-This creates:
-- 80+ songs (mix of classics, recent hits, and covers)
-- 3 demo users with $10,000 starting balance each
-- Initial market states (all songs start at $1.00)
-
-### 5. Start Development Server
+Open the repo in a Codespace — setup runs automatically via `.devcontainer`. When the terminal is ready, just run:
 
 ```bash
 pnpm dev
 ```
 
+If you're opening a Codespace for the first time and setup hasn't run yet:
+
+```bash
+bash setup.sh
+pnpm dev
+```
+
+### Local Development
+
+Prerequisites: Node.js 18+, pnpm, Docker
+
+```bash
+bash setup.sh
+pnpm dev
+```
+
+`setup.sh` handles everything: creates `.env`, starts PostgreSQL, applies the schema, and seeds demo data.
+
 Navigate to [http://localhost:3000](http://localhost:3000)
 
-### 6. Sign In
-
-Use the demo credentials:
+### Demo Credentials
 
 ```
-Username: demo
-Password: demo123
+demo / demo123
+trader1 / trader123
+musicfan / music123
 ```
 
-Other demo users: `trader1` / `trader123`, `musicfan` / `music123`
+Each account starts with $10,000 in fantasy currency.
 
 ## Key Endpoints
 
@@ -170,7 +120,7 @@ Generates deterministic but time-varying signals for each song:
 - **YouTube Views Delta**: Video engagement
 - **Social Mentions Trend**: Buzz tracking
 
-**Tag Generation Rules** (in `generateTags`):
+**Tag Generation Rules**:
 
 - `RE-EMERGING`: Song age >= 5 years + TikTok velocity > 0.3
 - `TIKTOK_SPIKE`: TikTok velocity > 0.4
@@ -184,96 +134,52 @@ Signals update every 30 minutes (deterministic seed based on time).
 
 ```
 encore-mvp/
+├── .devcontainer/
+│   └── devcontainer.json   # Codespaces config (auto-setup)
 ├── app/
-│   ├── api/              # API routes
-│   │   ├── auth/         # NextAuth handlers
-│   │   ├── trade/        # Trade execution
-│   │   ├── portfolio/    # Portfolio data
-│   │   └── admin/        # Admin operations
-│   ├── auth/signin/      # Sign-in page
-│   ├── song/[id]/        # Song market page
-│   ├── portfolio/        # Portfolio page
-│   ├── leaderboard/      # Leaderboard page
-│   ├── admin/            # Admin panel
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Home page
-│   └── globals.css       # Global styles
+│   ├── api/                # API routes
+│   │   ├── auth/           # NextAuth handlers
+│   │   ├── trade/          # Trade execution
+│   │   ├── portfolio/      # Portfolio data
+│   │   └── admin/          # Admin operations
+│   ├── auth/signin/        # Sign-in page
+│   ├── song/[id]/          # Song market page
+│   ├── portfolio/          # Portfolio page
+│   ├── leaderboard/        # Leaderboard page
+│   ├── admin/              # Admin panel
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── globals.css
 ├── components/
-│   ├── Navigation.tsx    # Nav bar
-│   └── TradeModule.tsx   # Buy/sell widget
+│   ├── Navigation.tsx
+│   └── TradeModule.tsx
+├── db/
+│   └── schema.sql          # Database schema
 ├── lib/
-│   ├── prisma.ts         # Prisma client
-│   ├── auth.ts           # NextAuth config
-│   ├── trading.ts        # Trade execution logic
-│   ├── market-tick.ts    # Pricing engine
-│   └── signals.ts        # Signal/tag generation
-├── prisma/
-│   ├── schema.prisma     # Database schema
-│   └── seed.ts           # Seed script
-├── docker-compose.yml    # PostgreSQL setup
-├── package.json
-└── README.md
+│   ├── auth.ts             # NextAuth config
+│   ├── trading.ts          # Trade execution logic
+│   ├── market-tick.ts      # Pricing engine
+│   └── signals.ts          # Signal/tag generation
+├── scripts/
+│   └── seed.ts             # Seed script
+├── docker-compose.yml      # PostgreSQL setup
+├── setup.sh                # One-command setup script
+└── package.json
 ```
 
 ## Database Schema
 
-**User**
-- id, username, email, password (hashed)
+**User** - id, username, email, password (hashed)
 
-**Song**
-- id, title, artistName, isCover, releaseYear
-- spotifyTrackId, appleMusicId, youtubeId (optional)
+**Song** - id, title, artistName, isCover, releaseYear, spotifyTrackId, appleMusicId, youtubeId
 
-**MarketState** (one per song)
-- price, change24hPct, volume24h, traders24h
-- tags (array of strings)
+**MarketState** (one per song) - price, change24hPct, volume24h, traders24h, tags
 
-**Trade**
-- userId, songId, side (BUY/SELL), qty, price, total
+**Trade** - userId, songId, side (BUY/SELL), qty, price, total
 
-**Position** (one per user per song)
-- userId, songId, qty, avgCost
+**Position** (one per user per song) - userId, songId, qty, avgCost
 
-**Ledger** (cash transactions)
-- userId, type (DEPOSIT/TRADE/ADJUST), amount, balanceAfter
-
-## Configuration & Tuning
-
-### Market Parameters
-
-Edit `lib/market-tick.ts`:
-
-```typescript
-const LIQUIDITY_CONSTANT = 10000;  // Higher = more stable prices
-const MAX_STEP = 0.15;              // Cap price swings at 15% per tick
-const MIN_PRICE = 0.05;             // Don't allow prices below $0.05
-const LOOKBACK_MINUTES = 60;        // Window for trade analysis
-```
-
-### Signal Thresholds
-
-Edit `lib/signals.ts`:
-
-```typescript
-// In generateTags function
-if (signals.tiktokVelocity > 0.4) tags.push('TIKTOK_SPIKE');  // Adjust threshold
-if (change24hPct > 20) tags.push('TOP_MOVER');                // Adjust % threshold
-```
-
-### Starting Balance
-
-Edit `prisma/seed.ts`:
-
-```typescript
-await prisma.ledger.create({
-  data: {
-    userId: user.id,
-    type: 'DEPOSIT',
-    amount: 10000,  // Change starting balance here
-    balanceAfter: 10000,
-  },
-});
-```
+**Ledger** (cash transactions) - userId, type (DEPOSIT/TRADE/ADJUST), amount, balanceAfter
 
 ## Development Scripts
 
@@ -285,16 +191,40 @@ pnpm start            # Production server
 pnpm lint             # Run ESLint
 
 # Database
-pnpm prisma:generate  # Generate Prisma client
-pnpm prisma:migrate   # Run migrations (creates schema)
-pnpm prisma:studio    # Open Prisma Studio (DB GUI)
-pnpm seed             # Seed database
+pnpm db:setup         # Apply schema (runs db/schema.sql)
+pnpm seed             # Seed database with songs and users
 
 # Docker
 docker compose up -d         # Start PostgreSQL
 docker compose down          # Stop PostgreSQL
 docker compose logs -f       # View logs
 ```
+
+## Configuration & Tuning
+
+### Market Parameters
+
+Edit `lib/market-tick.ts`:
+
+```typescript
+const LIQUIDITY_CONSTANT = 10000;  // Higher = more stable prices
+const MAX_STEP = 0.15;             // Cap price swings at 15% per tick
+const MIN_PRICE = 0.05;            // Don't allow prices below $0.05
+const LOOKBACK_MINUTES = 60;       // Window for trade analysis
+```
+
+### Signal Thresholds
+
+Edit `lib/signals.ts`:
+
+```typescript
+if (signals.tiktokVelocity > 0.4) tags.push('TIKTOK_SPIKE');
+if (change24hPct > 20) tags.push('TOP_MOVER');
+```
+
+### Starting Balance
+
+Edit `scripts/seed.ts` and change the deposit amount (default: `10000`).
 
 ## API Routes
 
@@ -303,7 +233,6 @@ docker compose logs -f       # View logs
 **POST /api/trade**
 - Body: `{ songId, side: "BUY" | "SELL", qty }`
 - Auth: Required (NextAuth session)
-- Returns: Trade record
 
 **GET /api/portfolio**
 - Auth: Required
@@ -318,60 +247,25 @@ docker compose logs -f       # View logs
 **GET /api/admin/stats**
 - Returns: `{ totalSongs, totalVolume, avgPrice, topMovers[] }`
 
-## Testing
-
-### Manual Testing Checklist
-
-1. ✅ Sign in with demo credentials
-2. ✅ Browse markets on home page
-3. ✅ Click into a song market page
-4. ✅ Execute a BUY trade
-5. ✅ Check portfolio shows position
-6. ✅ Execute a SELL trade
-7. ✅ Verify balance updates correctly
-8. ✅ Check leaderboard rankings
-9. ✅ Run market tick from admin panel
-10. ✅ Verify prices update
-
-### Trade Execution Tests
-
-Verify these scenarios work:
-
-- ✅ Buy with sufficient funds
-- ✅ Buy with insufficient funds (error)
-- ✅ Sell with sufficient shares
-- ✅ Sell with insufficient shares (error)
-- ✅ Fractional quantities (e.g., 0.5 shares)
-- ✅ Position average cost calculation
-- ✅ P&L calculation accuracy
-
 ## Production Deployment
 
-### Environment Variables
-
-Update `.env` for production:
+Update `.env`:
 
 ```env
 DATABASE_URL="postgresql://user:password@host:5432/db"
-NEXTAUTH_SECRET="<generate-random-secret>"
+NEXTAUTH_SECRET="<generate-with: openssl rand -base64 32>"
 NEXTAUTH_URL="https://yourdomain.com"
 ADMIN_PASSWORD="<secure-password>"
 ```
 
-Generate secret:
-```bash
-openssl rand -base64 32
-```
-
-### Database Migration
+Apply schema and seed on first deploy:
 
 ```bash
-pnpm prisma migrate deploy  # Run migrations in production
+pnpm db:setup
+pnpm seed
 ```
 
-### Market Tick Automation
-
-Set up a scheduled job (cron, GitHub Actions, Vercel Cron, etc.) to call:
+Set up a scheduled job to run market ticks every 1-5 minutes:
 
 ```bash
 curl -X POST https://yourdomain.com/api/admin/market-tick \
@@ -379,17 +273,38 @@ curl -X POST https://yourdomain.com/api/admin/market-tick \
   -d '{"password":"your-admin-password"}'
 ```
 
-Run every 1-5 minutes for active price movement.
+## Troubleshooting
+
+### Database connection fails
+
+Verify PostgreSQL is running:
+```bash
+docker compose ps
+docker compose logs postgres
+```
+
+### Port already in use
+
+If port 3000 is taken:
+```bash
+PORT=3001 pnpm dev
+```
+
+If port 5432 is taken:
+- Stop existing PostgreSQL: `sudo systemctl stop postgresql`
+- Or change the port in `docker-compose.yml` and `DATABASE_URL`
+
+### Codespace NEXTAUTH_URL mismatch
+
+If you see auth errors in Codespaces, make sure `NEXTAUTH_URL` in `.env` matches your forwarded port 3000 URL. Re-run `setup.sh` to regenerate it automatically.
 
 ## Known Limitations (MVP)
 
 - No real-time price updates (requires polling or WebSockets)
-- Price charts are placeholders (implement with Recharts + historical data)
 - No user registration flow (users are pre-seeded)
-- Signals are mock/simulated (integrate real APIs for production)
+- Signals are simulated (integrate real APIs for production)
 - No transaction history view
-- No order types (market orders only)
-- No price limits or circuit breakers
+- Market orders only (no limit orders or stop-loss)
 
 ## Roadmap (Post-MVP)
 
@@ -401,45 +316,7 @@ Run every 1-5 minutes for active price movement.
 - [ ] Portfolio history and equity curve
 - [ ] Social features (comments, follows)
 - [ ] Mobile app
-- [ ] Advanced analytics dashboard
-
-## Troubleshooting
-
-### Prisma Client Generation Fails
-
-If you see "403 Forbidden" when downloading Prisma engines:
-
-```bash
-PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 pnpm install
-```
-
-### Database Connection Issues
-
-Verify PostgreSQL is running:
-```bash
-docker compose ps
-```
-
-Test connection:
-```bash
-psql postgresql://encore:encore123@localhost:5432/encore_db
-```
-
-### Port Already in Use
-
-If port 3000 is taken:
-```bash
-PORT=3001 pnpm dev
-```
-
-If port 5432 is taken (PostgreSQL):
-- Stop existing PostgreSQL: `sudo systemctl stop postgresql`
-- Or change port in `docker-compose.yml` and `DATABASE_URL`
 
 ## License
 
 MIT
-
-## Support
-
-For issues and questions, please open an issue on GitHub.
